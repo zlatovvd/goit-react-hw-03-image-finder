@@ -12,7 +12,7 @@ class App extends Component {
     gallery: [],
     image: '',
     search: '',
-    page: 1,
+    page: 0,
     status: 'idle',
     error: '',
     isModal: false,
@@ -28,19 +28,25 @@ class App extends Component {
   };
 
   onSubmit = search => {
+    console.log('onSubmit');
+    if (search === this.state.search) {
+      return;
+    }
     this.setState({ search, page: 1, gallery: [] });
-    this.loadGallery(search);
   };
 
   onClickMoreBtn = () => {
-    const { search, page } = this.state;
-    this.loadGallery(search, page);
+    console.log('onClickMoreBtn');
+    this.setState(prevState => ({
+      page: prevState.page + 1,
+    }));
   };
 
-  loadGallery = async (page, search) => {
+  loadGallery = async () => {
+    const { page, search } = this.state;
     this.setState({ status: 'pending' });
     try {
-      const gallery = await getGallery(page, search);
+      const gallery = await getGallery(search, page);
       if (gallery.data.total === 0) {
         throw new Error(
           'Sorry, there are no images matching your search query. Please try again.'
@@ -50,12 +56,19 @@ class App extends Component {
       this.setState(prevState => ({
         gallery: [...prevState.gallery, ...gallery.data.hits],
         status: 'success',
-        page: prevState.page + 1,
       }));
     } catch (error) {
       this.setState({ error: error.message, status: 'error' });
     }
   };
+
+  componentDidUpdate(_, prevState) {
+    console.log('did update');
+    const { page, search } = this.state;
+    if (page !== prevState.page || search !== prevState.search) {
+      this.loadGallery();
+    }
+  }
 
   render() {
     const { status, gallery, image, error } = this.state;
